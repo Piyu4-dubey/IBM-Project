@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Prediction Model</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+            min-height: 700px;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            overflow: hidden;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-panel {
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .predict-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .predict-btn.loading {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .right-panel {
+            padding: 40px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .result-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71, #f39c12, #e74c3c);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .result-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .result-content {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .result-content.low-stress {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .result-content.moderate-stress {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+
+        .result-content.high-stress {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .result-content.empty {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #6c757d;
+            border: 2px dashed #dee2e6;
+        }
+
+        .chart-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #9b59b6, #3498db, #2ecc71);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-placeholder {
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+            border-radius: 10px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-size: 1rem;
+            border: 2px dashed #bdc3c7;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .prediction-graph {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction-graph::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .left-panel, .right-panel {
+                padding: 20px;
+            }
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon::before {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .success-animation {
+            animation: successPulse 0.6s ease-out;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 MENTAL HEALTH PREDICTION MODEL</h1>
+            <p>Advanced AI-powered stress level assessment and mental health insights</p>
+        </div>
+
+        <div class="left-panel">
+            <div class="panel-title">
+                📋 USER INPUT FIELDS
+            </div>
+            
+            <form id="predictForm">
+                <div class="form-group">
+                    <label for="age">👤 Age</label>
+                    <input type="number" id="age" min="1" max="120" required placeholder="Enter your age">
+                </div>
+
+                <div class="form-group">
+                    <label for="sleep">😴 Sleep Hours</label>
+                    <input type="number" id="sleep" min="0" max="24" step="0.5" required placeholder="Hours of sleep per night">
+                </div>
+
+                <div class="form-group">
+                    <label for="screen">📱 Screen Time (hours)</label>
+                    <input type="number" id="screen" min="0" max="24" step="0.5" required placeholder="Daily screen time">
+                </div>
+
+                <div class="form-group">
+                    <label for="activity">🏃 Physical Activity (hours/week)</label>
+                    <input type="number" id="activity" min="0" max="50" step="0.5" value="3" placeholder="Weekly physical activity">
+                </div>
+
+                <div class="form-group">
+                    <label for="social">👥 Social Interaction Level</label>
+                    <select id="social" required>
+                        <option value="">Select level</option>
+                        <option value="low">Low (1-2 people daily)</option>
+                        <option value="moderate">Moderate (3-5 people daily)</option>
+                        <option value="high">High (6+ people daily)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="predict-btn" id="predictBtn">
+                    🔮 PREDICT STRESS LEVEL
+                </button>
+            </form>
+        </div>
+
+        <div class="right-panel">
+            <div class="result-section">
+                <div class="result-title">🎯 PREDICTION RESULT</div>
+                <div class="result-content empty" id="result">
+                    Waiting for prediction...
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-title">📊 MENTAL HEALTH ANALYSIS</div>
+                <div class="chart-placeholder" id="healthChart">
+                    <div>Mental health metrics will appear here after prediction</div>
+                </div>
+            </div>
+
+            <div class="prediction-graph">
+                <div class="chart-title">📈 STRESS LEVEL VISUALIZATION</div>
+                <div class="chart-placeholder" id="stressGraph">
+                    <div>Stress level graph will be generated based on prediction result</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictForm').onsubmit = async function (e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('predictBtn');
+            const result = document.getElementById('result');
+            const healthChart = document.getElementById('healthChart');
+            const stressGraph = document.getElementById('stressGraph');
+            
+            // Get form values
+            const age = parseFloat(document.getElementById("age").value);
+            const sleep = parseFloat(document.getElementById("sleep").value);
+            const screen = parseFloat(document.getElementById("screen").value);
+            const activity = parseFloat(document.getElementById("activity").value);
+            const social = document.getElementById("social").value;
+            
+            // Show loading state
+            btn.innerHTML = '<span class="loading"></span>Analyzing...';
+            btn.classList.add('loading');
+            result.innerHTML = '<span class="loading"></span>Processing your data...';
+            result.className = 'result-content empty';
+            
+            try {
+                // Simulate API call with realistic delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // For demo purposes, calculate a simple stress score
+                let stressScore = 0;
+                
+                // Age factor
+                if (age < 25 || age > 65) stressScore += 1;
+                
+                // Sleep factor
+                if (sleep < 6) stressScore += 2;
+                else if (sleep < 7) stressScore += 1;
+                else if (sleep > 9) stressScore += 0.5;
+                
+                // Screen time factor
+                if (screen > 8) stressScore += 2;
+                else if (screen > 6) stressScore += 1;
+                
+                // Activity factor
+                if (activity < 2) stressScore += 1.5;
+                else if (activity < 1) stressScore += 2;
+                
+                // Social factor
+                if (social === 'low') stressScore += 1.5;
+                else if (social === 'high') stressScore += 0.5;
+                
+                // Determine stress level
+                let stressLevel, stressClass, stressEmoji, advice;
+                
+                if (stressScore <= 2) {
+                    stressLevel = 'LOW STRESS';
+                    stressClass = 'low-stress';
+                    stressEmoji = '😊';
+                    advice = 'Great job! Your lifestyle supports good mental health.';
+                } else if (stressScore <= 4) {
+                    stressLevel = 'MODERATE STRESS';
+                    stressClass = 'moderate-stress';
+                    stressEmoji = '😐';
+                    advice = 'Consider some lifestyle adjustments for better mental health.';
+                } else {
+                    stressLevel = 'HIGH STRESS';
+                    stressClass = 'high-stress';
+                    stressEmoji = '😰';
+                    advice = 'Your lifestyle may be contributing to high stress levels. Consider professional help.';
+                }
+                
+                // Update result
+                result.innerHTML = `${stressEmoji} ${stressLevel}`;
+                result.className = `result-content ${stressClass} success-animation`;
+                
+                // Update charts with mock data
+                healthChart.innerHTML = `
+                    <div style="text-align: center; color: #2c3e50;">
+                        <div style="font-size: 1.2rem; margin-bottom: 10px;">Mental Health Score</div>
+                        <div style="font-size: 2rem; font-weight: bold; color: ${stressClass === 'low-stress' ? '#27ae60' : stressClass === 'moderate-stress' ? '#f39c12' : '#e74c3c'};">
+                            ${Math.round((5 - stressScore) * 20)}%
+                        </div>
+                        <div style="font-size: 0.9rem; color: #7f8c8d; margin-top: 10px;">
+                            ${advice}
+                        </div>
+                    </div>
+                `;
+                
+                stressGraph.innerHTML = `
+                    <div style="text-align: center; color: #2c3e50;">
+                        <div style="font-size: 1.2rem; margin-bottom: 15px;">Stress Factors Analysis</div>
+                        <div style="display: flex; justify-content: space-around; align-items: end; height: 80px; margin-top: 20px;">
+                            <div style="background: #3498db; width: 30px; height: ${sleep < 7 ? '70px' : '30px'}; border-radius: 4px; position: relative;">
+                                <div style="position: absolute; bottom: -20px; font-size: 0.8rem; white-space: nowrap; left: 50%; transform: translateX(-50%);">Sleep</div>
+                            </div>
+                            <div style="background: #e74c3c; width: 30px; height: ${screen > 6 ? '70px' : '30px'}; border-radius: 4px; position: relative;">
+                                <div style="position: absolute; bottom: -20px; font-size: 0.8rem; white-space: nowrap; left: 50%; transform: translateX(-50%);">Screen</div>
+                            </div>
+                            <div style="background: #27ae60; width: 30px; height: ${activity < 2 ? '70px' : '30px'}; border-radius: 4px; position: relative;">
+                                <div style="position: absolute; bottom: -20px; font-size: 0.8rem; white-space: nowrap; left: 50%; transform: translateX(-50%);">Activity</div>
+                            </div>
+                            <div style="background: #f39c12; width: 30px; height: ${social === 'low' ? '70px' : '30px'}; border-radius: 4px; position: relative;">
+                                <div style="position: absolute; bottom: -20px; font-size: 0.8rem; white-space: nowrap; left: 50%; transform: translateX(-50%);">Social</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // You can replace this with actual API call:
+                /*
+                const res = await fetch("https://your-render-url.onrender.com/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ age, sleep, screen, activity, social })
+                });
+                const data = await res.json();
+                result.innerHTML = data.result;
+                */
+                
+            } catch (error) {
+                result.innerHTML = '❌ Error occurred. Please try again.';
+                result.className = 'result-content high-stress';
+            } finally {
+                btn.innerHTML = '🔮 PREDICT STRESS LEVEL';
+                btn.classList.remove('loading');
+            }
+        };
+    </script>
+</body>
+</html>
