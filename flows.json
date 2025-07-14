@@ -1,0 +1,166 @@
+[
+    {
+        "id": "e9e618d3e2cde203",
+        "type": "tab",
+        "label": "Watson AI Prediction",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "9bc3193d8c56cc0b",
+        "type": "ui_form",
+        "z": "e9e618d3e2cde203",
+        "name": "User Input Form",
+        "label": "Stress Prediction Input",
+        "group": "ui_group",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "options": [
+            {
+                "label": "Age",
+                "value": "age",
+                "type": "number",
+                "required": true
+            },
+            {
+                "label": "Sleep Hours",
+                "value": "sleep",
+                "type": "number",
+                "required": true
+            },
+            {
+                "label": "Screen Time (hrs)",
+                "value": "screen",
+                "type": "number",
+                "required": true
+            }
+        ],
+        "formValue": {},
+        "payload": "",
+        "submit": "Predict",
+        "cancel": "Cancel",
+        "topic": "",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "8f0c12d37592e38b"
+            ]
+        ]
+    },
+    {
+        "id": "8f0c12d37592e38b",
+        "type": "function",
+        "z": "e9e618d3e2cde203",
+        "name": "Prepare Token Request",
+        "func": "msg.headers = {\n    'Content-Type': 'application/x-www-form-urlencoded'\n};\nmsg.userInput = msg.payload;\nmsg.payload = `apikey=hJV_ahyv3MNa46UBuf1jm-_DmMkhlT8t0a3Pa242kzO4&grant_type=urn:ibm:params:oauth:grant-type:apikey`;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 420,
+        "y": 80,
+        "wires": [
+            [
+                "17e2cbb75eaf763d"
+            ]
+        ]
+    },
+    {
+        "id": "17e2cbb75eaf763d",
+        "type": "http request",
+        "z": "e9e618d3e2cde203",
+        "name": "Get IBM Token",
+        "method": "POST",
+        "ret": "obj",
+        "url": "https://iam.cloud.ibm.com/identity/token",
+        "tls": "",
+        "x": 660,
+        "y": 80,
+        "wires": [
+            [
+                "45981c49d1df9958"
+            ]
+        ]
+    },
+    {
+        "id": "45981c49d1df9958",
+        "type": "function",
+        "z": "e9e618d3e2cde203",
+        "name": "Prepare Watson Payload",
+        "func": "const token = msg.payload.access_token;\nconst userInput = msg.userInput;\n\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Authorization': 'Bearer ' + token\n};\n\nmsg.payload = {\n  input_data: [\n    {\n      fields: [\"age\", \"sleep\", \"screen\"],\n      values: [[userInput.age, userInput.sleep, userInput.screen]]\n    }\n  ]\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 920,
+        "y": 80,
+        "wires": [
+            [
+                "9905962d4f9a21d6"
+            ]
+        ]
+    },
+    {
+        "id": "9905962d4f9a21d6",
+        "type": "http request",
+        "z": "e9e618d3e2cde203",
+        "name": "Predict with Watson",
+        "method": "POST",
+        "ret": "obj",
+        "url": "https://au-syd.ml.cloud.ibm.com/ml/v4/deployments/49781105-393e-49a1-a203-ab422fc27ef7/predictions?version=2021-05-01",
+        "tls": "",
+        "x": 1160,
+        "y": 80,
+        "wires": [
+            [
+                "da780876bb3514c8"
+            ]
+        ]
+    },
+    {
+        "id": "da780876bb3514c8",
+        "type": "function",
+        "z": "e9e618d3e2cde203",
+        "name": "Parse Prediction",
+        "func": "let prediction = msg.payload.predictions[0].values[0][0];\nmsg.payload = `Predicted Stress Level: ${Math.round(prediction)}%`;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1380,
+        "y": 80,
+        "wires": [
+            [
+                "dd95f0879a558dc4"
+            ]
+        ]
+    },
+    {
+        "id": "dd95f0879a558dc4",
+        "type": "ui_text",
+        "z": "e9e618d3e2cde203",
+        "group": "ui_group",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Prediction Output",
+        "label": "Watson Prediction",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1600,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "ui_group",
+        "type": "ui_group",
+        "name": "ML Form",
+        "tab": "ui_tab",
+        "order": 1,
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "ui_tab",
+        "type": "ui_tab",
+        "name": "Watson Dashboard",
+        "icon": "dashboard",
+        "order": 1
+    }
+]
